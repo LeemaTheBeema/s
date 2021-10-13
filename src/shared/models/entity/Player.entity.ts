@@ -82,6 +82,8 @@ export class Player implements IPlayer {
   // player-related vars
   @Index({ unique: true })
   @Column() public name: string;
+  @Column() public hardcore: boolean;
+  @Column() public dead: boolean;
   @Column() public ascensionLevel: number;
   @Column() public lastAscension: number;
   @Column() public level: RestrictedNumber;
@@ -192,6 +194,7 @@ export class Player implements IPlayer {
     if(!this.$statTrail) this.$statTrail = { };
     if(!this.buffWatches) this.buffWatches = { };
     if(!this.cooldowns) this.cooldowns = { };
+    if(!this.hardcore) this.hardcore = false;
 
     delete (this as any).bossTimers;
     delete this.buffWatches['undefined'];
@@ -237,6 +240,11 @@ export class Player implements IPlayer {
     if(this.title && !this.availableTitles.includes(this.title)) {
       this.changeTitle('');
     }
+
+    if(this.hardcore) {
+      this.$statistics.set('Game/Hardcore', 1);
+      if(this.$statistics.get(`Hardcore/Dead`)) this.dead = true;
+    }
   }
 
   private validateGuild() {
@@ -272,6 +280,8 @@ export class Player implements IPlayer {
   }
 
   async loop(tick: number): Promise<void> {
+
+    if(this.hardcore && this.dead) return;
 
     this.increaseStatistic('Character/Ticks', 1);
 
@@ -645,7 +655,7 @@ export class Player implements IPlayer {
       });
 
       // festivals
-      if(stat !== Stat.SPECIAL) {
+      if(stat !== Stat.SPECIAL && !this.hardcore) {
         this.addStatTrail(stat, Math.floor(statBase * this.$$game.festivalManager.getMultiplier(stat)), 'Festivals');
       }
     });
@@ -1298,5 +1308,87 @@ export class Player implements IPlayer {
     this.$$game.discordManager.checkUserRoles(this);
 
     this.$premium.setTier(overrideTier || newPremium);
+  }
+
+  public killHardcore(): void {
+    this.dead = true;
+    this.$statistics.set(`Hardcore/Dead`, 1);
+    this.$$game.chatHelper.sendMessageFromClient({
+      message: `Hardcore player ${this.name} has passed on.`,
+      playerName: '☆System'
+    });
+  }
+
+  public reviveHardcore(): void {
+    if(!this.$statistics.get('Hardcore/Dead')) return;
+
+    // Remove formal flags
+    this.dead = false;
+    this.$statistics.unset('Hardcore/Dead');
+
+    // Return ascensions and levels to baseline
+    this.lastAscension = null;
+    this.ascensionLevel = 0;
+    this.level.minimum = 1;
+    this.level.set(1);
+    this.xp.set(0);
+    this.xp.maximum = this.$$game.calculatorHelper.calcLevelMaxXP(1);
+    this.level.maximum = 100;
+
+    // Update Best and Total statistics
+    const counts = {
+      Ascensions: this.$statistics.get('Character/Ascension/Times'),
+      Levels: this.$statistics.get('Character/Experience/Levels'),
+      Ticks: this.$statistics.get('Character/Ticks'),
+      Steps: this.$statistics.get('Character/Movement/Steps/Normal'),
+      Gold: this.gold
+    };
+
+    Object.keys(counts).forEach((stat) => {
+      const value = counts[stat];
+      this.increaseStatistic(`Hardcore/Total/${stat}`, value);
+      if(value > this.$statistics.get(`Hardcore/Best/${stat}`)) this.$statistics.set(`Hardcore/Best/${stat}`, value);
+    });
+
+    this.increaseStatistic('Hardcore/Total/Deaths', 1);
+
+    this.gold = 0;
+
+    this.cooldowns = { };
+    delete (this as any).bossTimers;
+    delete this.buffWatches['undefined'];
+    this.clearOldCooldowns();
+
+    // Remove all pets
+    this.$pets.resetPets(this);
+
+    // Re-initialize items, inventory, and buffs
+    const items = this.$game.itemGenerator.generateNewbieHardcoreItems();
+    items.forEach(item => this.$inventory.equipItem(item));
+    this.$inventory.clearInventory();
+    this.$inventory.clearBuffScrolls();
+
+    // Remove all collectibles
+    this.$collectibles.resetCollectibles();
+
+    // Clear choice log
+    this.$choices.removeAllChoices();
+
+    this.$statistics.hardcoreReset();
+    this.$game.achievementManager.syncAchievements(this);
+
+    this.buffWatches = { };
+
+    this.$$game.chatHelper.sendMessageFromClient({
+      message: `Hardcore player ${this.name} has risen anew.  Wish them luck.`,
+      playerName: '☆System'
+    });
+
+    this.setPos(10, 10, 'Norkos', 'Norkos Town');
+    this.divineDirection.steps = 0;
+    this.divineDirection = null;
+
+    this.calculateStamina();
+    this.recalculateStats();
   }
 }

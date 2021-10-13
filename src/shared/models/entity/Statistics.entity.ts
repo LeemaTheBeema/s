@@ -1,6 +1,6 @@
 
 import { Entity, ObjectIdColumn, Column } from 'typeorm';
-import { get, set, isNumber } from 'lodash';
+import { get, set, unset, isNumber } from 'lodash';
 
 import { PlayerOwned } from './PlayerOwned';
 
@@ -58,6 +58,10 @@ export class Statistics extends PlayerOwned {
     set(this.statistics, stat.split('/'), value);
   }
 
+  public unset(stat: string): void {
+     unset(this.statistics, stat.split('/'));
+  }
+
   public getChildren(stat: string): string[] {
     return Object.keys(this.get(stat));
   }
@@ -65,5 +69,14 @@ export class Statistics extends PlayerOwned {
   public getChildrenCount(stat: string): number {
     const statB = this.get(stat);
     return isNumber(statB) ? statB : Object.keys(statB).length;
+  }
+
+  public hardcoreReset(): void {
+    const keepStats = {
+      Hardcore: this.statistics.Hardcore,
+      Game: this.statistics.Game
+    };
+
+    this.statistics = { ...keepStats };
   }
 }

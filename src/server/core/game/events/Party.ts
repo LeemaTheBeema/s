@@ -13,6 +13,11 @@ export class Party extends Event {
       return;
     }
 
+    if(player.hardcore) {
+      this.emitMessage([player], 'You looked for a party, but you are too Hardcore for anyone to join you!', AdventureLogEventType.Party);
+      return;
+    }
+
     if(player.$party) {
       this.emitMessage([player],
         'You almost started looking for a party before you realized you were in one!', AdventureLogEventType.Party);
@@ -28,6 +33,7 @@ export class Party extends Event {
       && !x.$personalities.isActive('Solo')
       && !x.$personalities.isActive('Camping')
       && !x.$personalities.isActive('Leader')
+      && !x.hardcore
     );
     if(checkPlayers.length < 3) {
       this.emitMessage([player], 'You almost found enough people for a group!', AdventureLogEventType.Party);

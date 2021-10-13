@@ -341,6 +341,8 @@ export class CombatHelper {
         if(isNaN(value) || !isFinite(value)) return;
 
         playerRef.increaseStatistic(statistic, value);
+
+        if(playerRef.hardcore && statistic === `Combat/All/Times/Lose`) playerRef.killHardcore();
       }
     });
 

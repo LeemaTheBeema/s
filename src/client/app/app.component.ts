@@ -51,9 +51,9 @@ export class AppComponent {
       }
     },
 
-    { name: 'Guilds', icon: 'guild', url: '/guilds', hideIf: (player) => player.guildName },
+    { name: 'Guilds', icon: 'guild', url: '/guilds', hideIf: (player) => player.guildName || player.hardcore },
 
-    { name: 'Guild', icon: 'guild', url: '/guild', hideIf: (player) => !player.guildName },
+    { name: 'Guild', icon: 'guild', url: '/guild', hideIf: (player) => !player.guildName || player.hardcore },
 
     { name: 'Map', icon: 'map', url: '/map' },
 
@@ -270,6 +270,37 @@ export class AppComponent {
     }
 
     if (this.clouds > 400) window.location.reload();
+  }
+
+  public async hardcoreDescription() {
+    const alert = await this.alertCtrl.create({
+      header: 'Hardcore',
+      message: `Welcome to Hardcore!
+      <br>
+      <br>
+      Hardcore is a feature only for the most dedicated players of Idle Lands.  Be warned that in Hardcore, death is permanent.
+      <br>
+      Well, sort of.
+      <br>
+      Death will kill your character and your progress, but it's not the end of the line forever.
+      <br>
+      You may revive a dead Hardcore character at any time to begin your process anew.
+      <br>
+      You will lose everything except your Hardcore statistics, and a select few achievements, and start completely fresh.
+      <br>
+      Hardcore also changes the game slightly.
+      <br>
+      Parties, PVP combat, Guilds, Salvaging, Festivals, Premium purchases, Witch events, and Quests are permantly disabled.
+      <br>
+      Barbarian's Duel, Bard's Orchestra, and Cleric's Cure have been adjusted.  Enhancing pets is now free.
+      <br>
+      You'll also earn some shiny new achievements for your primary character, so make sure to keep on idling.
+      <br>
+      Best of luck!`,
+      buttons: [
+        { text: 'Okay', role: 'cancel' }
+      ]
+    });
   }
 
   private watchSpecialEvents() {

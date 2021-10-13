@@ -9,6 +9,11 @@ export class BattlePvP extends Event {
 
   public operateOn(player: Player) {
 
+    if(player.hardcore) {
+      this.emitMessage([player], 'Your thirst for danger scared away any potential combat partners!', AdventureLogEventType.Party);
+      return;
+    }
+
     const checkPlayers = this.playerManager.allPlayers.filter(
       x => (player.$party ? x.$party : !x.$party)
         && (player.$party ? x.$party.name !== player.$party.name : true)

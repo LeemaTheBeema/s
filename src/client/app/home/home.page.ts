@@ -20,6 +20,7 @@ import { AuthService } from '../auth.service';
 export class HomePage implements OnInit, OnDestroy {
 
   public charName: string;
+  public hardcore: boolean;
   public loading = true;
   public needsSignUp: boolean;
   public hasError: boolean;
@@ -103,7 +104,7 @@ export class HomePage implements OnInit, OnDestroy {
 
   public signUp() {
     if(!this.canSignUp) return;
-    this.socketService.emit(ServerEventName.AuthRegister, { name: this.charName, userId: this.userId });
+    this.socketService.emit(ServerEventName.AuthRegister, { name: this.charName, userId: this.userId, hardcore: this.hardcore });
   }
 
   private needsName() {
